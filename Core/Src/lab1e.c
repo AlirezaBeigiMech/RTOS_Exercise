@@ -1,9 +1,9 @@
 
-#include "lab1a.h"
+#include "lab1e.h"
 
 
 
-void StartDefaultTask_lab1a(void *argument)
+void StartDefaultTask_lab1e(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -16,7 +16,7 @@ void StartDefaultTask_lab1a(void *argument)
   {
 
 	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	HAL_Delay(1500);
+	//HAL_Delay(1500);
 
   }
   //osDelay(500);
@@ -30,7 +30,7 @@ void StartDefaultTask_lab1a(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartTask02 */
-void StartTask02_lab1a(void *argument)
+void StartTask02_lab1e(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
 	char *txBuffer = "Task 02\r\n";
@@ -39,8 +39,9 @@ void StartTask02_lab1a(void *argument)
   for(;;)
   {
 
-    osDelay(1500);
+    //osDelay(1500);
     CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
+    osThreadYield();
 
   }
 

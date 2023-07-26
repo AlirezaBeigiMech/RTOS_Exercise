@@ -26,7 +26,8 @@
 #include "usbd_cdc_if.h"
 
 //#define LAB1A
-#define LAB1C
+//#define LAB1C
+#define LAB1E
 
 
 #ifdef LAB1A
@@ -40,6 +41,13 @@
 
 	void (*Task1) = &StartDefaultTask_lab1c;
 	void (*Task2) = &StartTask02_lab1c;
+#endif
+
+
+#ifdef LAB1E
+   #include "lab1e.h"
+	void (*Task1) = &StartDefaultTask_lab1e;
+	void (*Task2) = &StartTask02_lab1e;
 #endif
 
 
