@@ -24,7 +24,25 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
-#include "lab1a.h"
+
+//#define LAB1A
+#define LAB1C
+
+
+#ifdef LAB1A
+   #include "lab1a.h"
+	void (*Task1) = &StartDefaultTask_lab1a;
+	void (*Task2) = &StartTask02_lab1a;
+#endif
+
+#ifdef LAB1C
+   #include "lab1c.h"
+
+	void (*Task1) = &StartDefaultTask_lab1c;
+	void (*Task2) = &StartTask02_lab1c;
+#endif
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -141,10 +159,10 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of Task1 */
-  Task1Handle = osThreadNew(StartDefaultTask, NULL, &Task1_attributes);
+  Task1Handle = osThreadNew(Task1, NULL, &Task1_attributes);
 
   /* creation of Task2 */
-  Task2Handle = osThreadNew(StartTask02, NULL, &Task2_attributes);
+  Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

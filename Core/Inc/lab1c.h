@@ -11,5 +11,5 @@ extern osThreadId_t Task1Handle;
 /* Definitions for Task2 */
 extern osThreadId_t Task2Handle;
 
-void StartDefaultTask_lab1a(void *argument);
-void StartTask02_lab1a(void *argument);
+void StartDefaultTask_lab1c(void *argument);
+void StartTask02_lab1c(void *argument);

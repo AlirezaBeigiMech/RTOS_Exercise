@@ -1,9 +1,9 @@
-
-#include "lab1a.h"
-
+#include "lab1c.h"
 
 
-void StartDefaultTask_lab1a(void *argument)
+
+
+void StartDefaultTask_lab1c(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -35,7 +35,7 @@ void StartDefaultTask_lab1a(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartTask02 */
-void StartTask02_lab1a(void *argument)
+void StartTask02_lab1c(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
 	char *txBuffer = "Task 02\r\n";
