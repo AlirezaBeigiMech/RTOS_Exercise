@@ -25,9 +25,12 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 
+//#define TEST
 //#define LAB1A
 //#define LAB1C
-#define LAB1E
+//#define LAB1E
+#define LAB1H
+
 
 
 #ifdef LAB1A
@@ -50,12 +53,25 @@
 	void (*Task2) = &StartTask02_lab1e;
 #endif
 
+#ifdef LAB1H
+   #include "lab1h.h"
+	void (*Task1) = &StartDefaultTask_lab1h;
+	void (*Task2) = &StartTask02_lab1h;
+#endif
+
+#ifdef TEST
+	void StartDefaultTask(void *argument);
+	void StartTask02(void *argument);
+	void (*Task1) = &StartDefaultTask;
+	void (*Task2) = &StartTask02;
+#endif
+
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-void Task_action(char message);
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -167,10 +183,10 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of Task1 */
-  Task1Handle = osThreadNew(Task1, NULL, &Task1_attributes);
+  Task1Handle = osThreadNew(StartDefaultTask, NULL, &Task1_attributes);
 
   /* creation of Task2 */
-  Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
+  //Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -449,10 +465,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void Task_action(char message){
-	ITM_SendChar(message);
-	ITM_SendChar('\n');
-}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -461,26 +474,29 @@ void Task_action(char message){
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
+
+
 void StartDefaultTask(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   char *txBuffer = "Task 01\r\n";
-  osPriority_t Priority;
 
+  osThreadId_t Task2Handle;
+  const osThreadAttr_t Task2_attributes = {
+    .name = "Task2",
+    .stack_size = 256 * 4,
+    .priority = (osPriority_t) osPriorityNormal2,
+  };
 
   //uint8_t message[8] = "hello \n";
   /* Infinite loop */
   for(;;)
   {
-	  //Task_action('1');
-	  Priority = uxTaskPriorityGet(Task2Handle);
-	 //osDelay(1500);
+	Task2Handle = osThreadNew(StartTask02, NULL, &Task2_attributes);
 	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	osThreadSetPriority(Task2Handle, Priority + 1 );
-	HAL_Delay(1500);
+	osDelay(1500);
 
   }
   //osDelay(500);
@@ -498,20 +514,19 @@ void StartTask02(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
 	char *txBuffer = "Task 02\r\n";
-	osPriority_t Priority;
+
   /* Infinite loop */
   for(;;)
   {
-	 Priority = uxTaskPriorityGet(Task2Handle);
-    //Task_action('2');
+
     osDelay(1500);
     CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-    osThreadSetPriority(Task2Handle, Priority - 2 );
 
   }
 
   /* USER CODE END StartTask02 */
 }
+
 
 /**
   * @brief  Period elapsed callback in non blocking mode
