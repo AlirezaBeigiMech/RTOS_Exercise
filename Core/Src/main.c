@@ -30,15 +30,15 @@
 //#define LAB1C
 //#define LAB1E
 //#define LAB1H
-#define LAB2C
+//#define LAB2C
+#define LAB2F
 
-#include "lab2c.h"
 
 #if defined(LAB1E) || defined(LAB1A) || defined(LAB1C) || defined(LAB1H)
 	#define LAB1
 #endif
 
-#if defined(LAB2C)
+#if defined(LAB2C) || defined(LAB2F)
 	#define LAB2
 #endif
 
@@ -74,6 +74,13 @@
 	void (*Task2) = &Receiver_lab2c;
 #endif
 
+#ifdef LAB2F
+   #include "lab2f.h"
+	void (*Task1) = &Sender1_lab2f;
+	void (*Task2) = &Receiver_lab2f;
+	void (*Task3) = &Sender2_lab2f;
+#endif
+
 #ifdef TEST
 	void Sender(void *argument);
 	void Receiver(void *argument);
@@ -96,7 +103,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+uint8_t x;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -120,6 +127,13 @@ const osThreadAttr_t Task2_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal2,
 };
+/* Definitions for Task3 */
+osThreadId_t Task3Handle;
+const osThreadAttr_t Task3_attributes = {
+  .name = "Task3",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal2,
+};
 /* Definitions for myQueue01 */
 osMessageQueueId_t myQueue01Handle;
 const osMessageQueueAttr_t myQueue01_attributes = {
@@ -135,8 +149,9 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
-void Sender(void *argument);
+void Sender1(void *argument);
 void Receiver(void *argument);
+void Sender2(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -207,10 +222,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of Task1 */
-  //Task1Handle = osThreadNew(Sender, NULL, &Task1_attributes);
 
-  /* creation of Task2 */
-  //Task2Handle = osThreadNew(Receiver, NULL, &Task2_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -223,11 +235,20 @@ int main(void)
 	#ifdef LAB2
 		Task1Handle = osThreadNew(Task1, NULL, &Task1_attributes);
 		Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
+	#ifdef LAB2F
+		Task3Handle = osThreadNew(Task3, NULL, &Task3_attributes);
+	#endif
+		//Task3Handle = osThreadNew(Task3, NULL, &Task3_attributes);
 	#endif
 
 	#ifdef TEST
-		Task1Handle = osThreadNew(Sender, NULL, &Task1_attributes);
-		Task2Handle = osThreadNew(Receiver, NULL, &Task2_attributes);
+		  Task1Handle = osThreadNew(Sender1, NULL, &Task1_attributes);
+
+		  /* creation of Task2 */
+		  Task2Handle = osThreadNew(Receiver, NULL, &Task2_attributes);
+
+		  /* creation of Task3 */
+		  Task3Handle = osThreadNew(Sender2, NULL, &Task3_attributes);
 	#endif
   /* USER CODE END RTOS_THREADS */
 
@@ -507,15 +528,14 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_Sender */
+/* USER CODE BEGIN Header_Sender1 */
 /**
   * @brief  Function implementing the Task1 thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_Sender */
-uint8_t x = 0;
-void Sender(void *argument)
+/* USER CODE END Header_Sender1 */
+void Sender1(void *argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -529,12 +549,11 @@ void Sender(void *argument)
   {
 	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
 	//osMessagePut(myQueue01Handle, &x, millisec)
-	osMessageQueuePut(myQueue01Handle, (uint8_t *)&x, 1, 2000);
+	x = 1;
+	osMessageQueuePut(myQueue01Handle, (uint8_t *)&x, 1, 4000);
 
-	if (++x>9){
-		x = 0;
-	}
-	osDelay(1500);
+
+	osDelay(2000);
 
   }
   //osDelay(500);
@@ -548,7 +567,7 @@ void Sender(void *argument)
 * @retval None
 */
 /* USER CODE END Header_Receiver */
-extern uint8_t res;
+
 void Receiver(void *argument)
 {
   /* USER CODE BEGIN Receiver */
@@ -559,7 +578,7 @@ void Receiver(void *argument)
   for(;;)
   {
 	  CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	  osMessageQueueGet(myQueue01Handle, (uint8_t *)&res, NULL, 2000);
+	  osMessageQueueGet(myQueue01Handle, (uint8_t *)&res, NULL, 4000);
 	  //osMessageQueueGet(mq_id, msg_ptr, msg_prio, timeout)
 	  //osMessageQueueGet(mq_id, msg_ptr, msg_prio, timeout)
 	  //char *txBuffer1 = (char *)(res+48);
@@ -568,9 +587,41 @@ void Receiver(void *argument)
 	  CDC_Transmit_FS((uint8_t *)&res, strlen((char *)&res));
 
 
-	  osDelay(1500);
+	  osDelay(2000);
   }
   /* USER CODE END Receiver */
+}
+
+/* USER CODE BEGIN Header_Sender2 */
+/**
+* @brief Function implementing the Task3 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Sender2 */
+void Sender2(void *argument)
+{
+  /* USER CODE BEGIN Sender2 */
+  /* Infinite loop */
+	  MX_USB_DEVICE_Init();
+	  /* USER CODE BEGIN 5 */
+	  char *txBuffer = "Sender \r\n";
+
+
+	  //uint8_t message[8] = "hello \n";
+	  /* Infinite loop */
+	  for(;;)
+	  {
+		CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
+		//osMessagePut(myQueue01Handle, &x, millisec)
+		x = 2;
+		osMessageQueuePut(myQueue01Handle, (uint8_t *)&x, 1, 4000);
+
+
+		osDelay(2000);
+
+	  }
+  /* USER CODE END Sender2 */
 }
 
 /**
