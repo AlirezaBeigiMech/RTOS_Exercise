@@ -31,14 +31,15 @@
 //#define LAB1E
 //#define LAB1H
 //#define LAB2C
-#define LAB2F
+//#define LAB2F
+#define LAB2H
 
 
 #if defined(LAB1E) || defined(LAB1A) || defined(LAB1C) || defined(LAB1H)
 	#define LAB1
 #endif
 
-#if defined(LAB2C) || defined(LAB2F)
+#if defined(LAB2C) || defined(LAB2F) || defined(LAB2H)
 	#define LAB2
 #endif
 
@@ -79,6 +80,14 @@
 	void (*Task1) = &Sender1_lab2f;
 	void (*Task2) = &Receiver_lab2f;
 	void (*Task3) = &Sender2_lab2f;
+#endif
+
+
+#ifdef LAB2H
+   #include "lab2h.h"
+	void (*Task1) = &Sender1_lab2h;
+	void (*Task2) = &Receiver_lab2h;
+	void (*Task3) = &Sender2_lab2h;
 #endif
 
 #ifdef TEST
@@ -140,7 +149,14 @@ const osMessageQueueAttr_t myQueue01_attributes = {
   .name = "myQueue01"
 };
 /* USER CODE BEGIN PV */
+typedef struct  {
+    uint8_t source;
+    uint16_t value;
+} Data;
 
+
+Data Data2Send1 = {'a',1};
+Data Data2Send2 = {'b',2};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -214,7 +230,8 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of myQueue01 */
-  myQueue01Handle = osMessageQueueNew (8, sizeof(uint8_t), &myQueue01_attributes);
+  //myQueue01Handle = osMessageQueueNew (8, sizeof(uint8_t), &myQueue01_attributes);
+  myQueue01Handle = osMessageQueueNew (8, sizeof(Data), &myQueue01_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -235,7 +252,7 @@ int main(void)
 	#ifdef LAB2
 		Task1Handle = osThreadNew(Task1, NULL, &Task1_attributes);
 		Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
-	#ifdef LAB2F
+	#if defined(LAB2F) || defined(LAB2H)
 		Task3Handle = osThreadNew(Task3, NULL, &Task3_attributes);
 	#endif
 		//Task3Handle = osThreadNew(Task3, NULL, &Task3_attributes);
@@ -550,7 +567,7 @@ void Sender1(void *argument)
 	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
 	//osMessagePut(myQueue01Handle, &x, millisec)
 	x = 1;
-	osMessageQueuePut(myQueue01Handle, (uint8_t *)&x, 1, 4000);
+	osMessageQueuePut(myQueue01Handle, (uint8_t *)&Data2Send1, 1, 4000);
 
 
 	osDelay(2000);
@@ -567,24 +584,30 @@ void Sender1(void *argument)
 * @retval None
 */
 /* USER CODE END Header_Receiver */
-
+uint16_t res2;
+uint16_t res1;
 void Receiver(void *argument)
 {
   /* USER CODE BEGIN Receiver */
 	MX_USB_DEVICE_Init();
+	Data retvalue;
 
 	char *txBuffer = "Receiver \r\n";
   /* Infinite loop */
   for(;;)
   {
 	  CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	  osMessageQueueGet(myQueue01Handle, (uint8_t *)&res, NULL, 4000);
+	  osMessageQueueGet(myQueue01Handle, &retvalue, NULL, 4000);
+
 	  //osMessageQueueGet(mq_id, msg_ptr, msg_prio, timeout)
 	  //osMessageQueueGet(mq_id, msg_ptr, msg_prio, timeout)
 	  //char *txBuffer1 = (char *)(res+48);
 	  osDelay(100);
-	  res = res + 49;
-	  CDC_Transmit_FS((uint8_t *)&res, strlen((char *)&res));
+	  res1 = retvalue.source;
+	  CDC_Transmit_FS((uint8_t *)&res1, strlen((char *)&res1));
+	  res2 = retvalue.value;
+	  res2 = res2 + 49;
+	  CDC_Transmit_FS((uint8_t *)&res2, strlen((char *)&res2));
 
 
 	  osDelay(2000);
@@ -614,8 +637,8 @@ void Sender2(void *argument)
 	  {
 		CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
 		//osMessagePut(myQueue01Handle, &x, millisec)
-		x = 2;
-		osMessageQueuePut(myQueue01Handle, (uint8_t *)&x, 1, 4000);
+		//x = 2;
+		osMessageQueuePut(myQueue01Handle, (uint8_t *)&Data2Send2, 1, 4000);
 
 
 		osDelay(2000);
