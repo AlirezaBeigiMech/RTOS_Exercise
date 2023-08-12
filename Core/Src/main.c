@@ -32,8 +32,11 @@
 //#define LAB1H
 //#define LAB2C
 //#define LAB2F
-#define LAB2H
+//#define LAB2H
+#define LAB3C
 
+uint16_t res2;
+uint16_t res1;
 
 #if defined(LAB1E) || defined(LAB1A) || defined(LAB1C) || defined(LAB1H)
 	#define LAB1
@@ -41,6 +44,10 @@
 
 #if defined(LAB2C) || defined(LAB2F) || defined(LAB2H)
 	#define LAB2
+#endif
+
+#if defined(LAB3C)
+	#define LAB3
 #endif
 
 
@@ -90,10 +97,17 @@
 	void (*Task3) = &Sender2_lab2h;
 #endif
 
+
+#ifdef LAB3C
+   #include "lab3c.h"
+	void (*Task1) = &Sender1_lab3c;
+	void (*Task2) = &Receiver_lab3c;
+#endif
+
 #ifdef TEST
-	void Sender(void *argument);
+	void Sender1(void *argument);
 	void Receiver(void *argument);
-	void (*Task1) = &Sender;
+	void (*Task1) = &Sender1;
 	void (*Task2) = &Receiver;
 #endif
 
@@ -147,6 +161,11 @@ const osThreadAttr_t Task3_attributes = {
 osMessageQueueId_t myQueue01Handle;
 const osMessageQueueAttr_t myQueue01_attributes = {
   .name = "myQueue01"
+};
+/* Definitions for myBinarySem01 */
+osSemaphoreId_t myBinarySem01Handle;
+const osSemaphoreAttr_t myBinarySem01_attributes = {
+  .name = "myBinarySem01"
 };
 /* USER CODE BEGIN PV */
 typedef struct  {
@@ -220,6 +239,10 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
+  /* Create the semaphores(s) */
+  /* creation of myBinarySem01 */
+  myBinarySem01Handle = osSemaphoreNew(1, 0, &myBinarySem01_attributes);
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -230,8 +253,7 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of myQueue01 */
-  //myQueue01Handle = osMessageQueueNew (8, sizeof(uint8_t), &myQueue01_attributes);
-  myQueue01Handle = osMessageQueueNew (8, sizeof(Data), &myQueue01_attributes);
+  myQueue01Handle = osMessageQueueNew (8, sizeof(uint8_t), &myQueue01_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -258,6 +280,12 @@ int main(void)
 		//Task3Handle = osThreadNew(Task3, NULL, &Task3_attributes);
 	#endif
 
+
+	#ifdef LAB3
+			Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
+			Task1Handle = osThreadNew(Task1, NULL, &Task1_attributes);
+	#endif
+
 	#ifdef TEST
 		  Task1Handle = osThreadNew(Sender1, NULL, &Task1_attributes);
 
@@ -265,7 +293,7 @@ int main(void)
 		  Task2Handle = osThreadNew(Receiver, NULL, &Task2_attributes);
 
 		  /* creation of Task3 */
-		  Task3Handle = osThreadNew(Sender2, NULL, &Task3_attributes);
+		  //Task3Handle = osThreadNew(Sender2, NULL, &Task3_attributes);
 	#endif
   /* USER CODE END RTOS_THREADS */
 
@@ -564,13 +592,12 @@ void Sender1(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	//osMessagePut(myQueue01Handle, &x, millisec)
-	x = 1;
-	osMessageQueuePut(myQueue01Handle, (uint8_t *)&Data2Send1, 1, 4000);
-
 
 	osDelay(2000);
+	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
+	//osMessagePut(myQueue01Handle, &x, millisec)
+	osSemaphoreRelease(myBinarySem01Handle);
+
 
   }
   //osDelay(500);
@@ -584,8 +611,6 @@ void Sender1(void *argument)
 * @retval None
 */
 /* USER CODE END Header_Receiver */
-uint16_t res2;
-uint16_t res1;
 void Receiver(void *argument)
 {
   /* USER CODE BEGIN Receiver */
@@ -596,21 +621,10 @@ void Receiver(void *argument)
   /* Infinite loop */
   for(;;)
   {
+	  //osDelay(2000);
 	  CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	  osMessageQueueGet(myQueue01Handle, &retvalue, NULL, 4000);
+	  osSemaphoreAcquire(myBinarySem01Handle, 4000);
 
-	  //osMessageQueueGet(mq_id, msg_ptr, msg_prio, timeout)
-	  //osMessageQueueGet(mq_id, msg_ptr, msg_prio, timeout)
-	  //char *txBuffer1 = (char *)(res+48);
-	  osDelay(100);
-	  res1 = retvalue.source;
-	  CDC_Transmit_FS((uint8_t *)&res1, strlen((char *)&res1));
-	  res2 = retvalue.value;
-	  res2 = res2 + 49;
-	  CDC_Transmit_FS((uint8_t *)&res2, strlen((char *)&res2));
-
-
-	  osDelay(2000);
   }
   /* USER CODE END Receiver */
 }
