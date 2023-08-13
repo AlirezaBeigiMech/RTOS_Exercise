@@ -33,7 +33,8 @@
 //#define LAB2C
 //#define LAB2F
 //#define LAB2H
-#define LAB3C
+//#define LAB3C
+#define LAB3F
 
 uint16_t res2;
 uint16_t res1;
@@ -46,7 +47,7 @@ uint16_t res1;
 	#define LAB2
 #endif
 
-#if defined(LAB3C)
+#if defined(LAB3C) || defined(LAB3F)
 	#define LAB3
 #endif
 
@@ -104,6 +105,14 @@ uint16_t res1;
 	void (*Task2) = &Receiver_lab3c;
 #endif
 
+
+#ifdef LAB3F
+   #include "lab3f.h"
+	void (*Task1) = &Sender1_lab3f;
+	void (*Task2) = &Receiver_lab3f;
+	void (*Task3) = &Sender2_lab3f;
+#endif
+
 #ifdef TEST
 	void Sender1(void *argument);
 	void Receiver(void *argument);
@@ -141,21 +150,21 @@ osThreadId_t Task1Handle;
 const osThreadAttr_t Task1_attributes = {
   .name = "Task1",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal2,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for Task2 */
 osThreadId_t Task2Handle;
 const osThreadAttr_t Task2_attributes = {
   .name = "Task2",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal2,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for Task3 */
 osThreadId_t Task3Handle;
 const osThreadAttr_t Task3_attributes = {
   .name = "Task3",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal2,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for myQueue01 */
 osMessageQueueId_t myQueue01Handle;
@@ -166,6 +175,11 @@ const osMessageQueueAttr_t myQueue01_attributes = {
 osSemaphoreId_t myBinarySem01Handle;
 const osSemaphoreAttr_t myBinarySem01_attributes = {
   .name = "myBinarySem01"
+};
+/* Definitions for myCountingSem01 */
+osSemaphoreId_t myCountingSem01Handle;
+const osSemaphoreAttr_t myCountingSem01_attributes = {
+  .name = "myCountingSem01"
 };
 /* USER CODE BEGIN PV */
 typedef struct  {
@@ -243,6 +257,9 @@ int main(void)
   /* creation of myBinarySem01 */
   myBinarySem01Handle = osSemaphoreNew(1, 0, &myBinarySem01_attributes);
 
+  /* creation of myCountingSem01 */
+  myCountingSem01Handle = osSemaphoreNew(2, 0, &myCountingSem01_attributes);
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -261,7 +278,13 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of Task1 */
+  Task1Handle = osThreadNew(Sender1, NULL, &Task1_attributes);
 
+  /* creation of Task2 */
+  Task2Handle = osThreadNew(Receiver, NULL, &Task2_attributes);
+
+  /* creation of Task3 */
+  Task3Handle = osThreadNew(Sender2, NULL, &Task3_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -284,6 +307,9 @@ int main(void)
 	#ifdef LAB3
 			Task2Handle = osThreadNew(Task2, NULL, &Task2_attributes);
 			Task1Handle = osThreadNew(Task1, NULL, &Task1_attributes);
+	#if defined(LAB3F)
+		Task3Handle = osThreadNew(Task3, NULL, &Task3_attributes);
+	#endif
 	#endif
 
 	#ifdef TEST
@@ -293,7 +319,7 @@ int main(void)
 		  Task2Handle = osThreadNew(Receiver, NULL, &Task2_attributes);
 
 		  /* creation of Task3 */
-		  //Task3Handle = osThreadNew(Sender2, NULL, &Task3_attributes);
+		  Task3Handle = osThreadNew(Sender2, NULL, &Task3_attributes);
 	#endif
   /* USER CODE END RTOS_THREADS */
 
@@ -569,7 +595,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+ /* Prevent unused argument(s) compilation warning */
+ //UNUSED(GPIO_Pin);
+ char *txBuffer = "Sender Int \r\n";
+	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
+	//osMessagePut(myQueue01Handle, &x, millisec)
+	osSemaphoreRelease(myCountingSem01Handle);
+ /* NOTE: This function Should not be modified, when the callback is needed,
+          the HAL_GPIO_EXTI_Callback could be implemented in the user file
+  */
+}
 
 /* USER CODE END 4 */
 
@@ -583,9 +620,9 @@ static void MX_GPIO_Init(void)
 void Sender1(void *argument)
 {
   /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
+  //MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
-  char *txBuffer = "Sender \r\n";
+  char *txBuffer = "Sender1 \r\n";
 
 
   //uint8_t message[8] = "hello \n";
@@ -596,7 +633,7 @@ void Sender1(void *argument)
 	osDelay(2000);
 	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
 	//osMessagePut(myQueue01Handle, &x, millisec)
-	osSemaphoreRelease(myBinarySem01Handle);
+	osSemaphoreRelease(myCountingSem01Handle);
 
 
   }
@@ -614,8 +651,7 @@ void Sender1(void *argument)
 void Receiver(void *argument)
 {
   /* USER CODE BEGIN Receiver */
-	MX_USB_DEVICE_Init();
-	Data retvalue;
+	//MX_USB_DEVICE_Init();
 
 	char *txBuffer = "Receiver \r\n";
   /* Infinite loop */
@@ -623,7 +659,9 @@ void Receiver(void *argument)
   {
 	  //osDelay(2000);
 	  CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	  osSemaphoreAcquire(myBinarySem01Handle, 4000);
+	  osSemaphoreAcquire(myCountingSem01Handle, 1000);
+	  osSemaphoreAcquire(myCountingSem01Handle, 1000);
+
 
   }
   /* USER CODE END Receiver */
@@ -639,25 +677,21 @@ void Receiver(void *argument)
 void Sender2(void *argument)
 {
   /* USER CODE BEGIN Sender2 */
-  /* Infinite loop */
-	  MX_USB_DEVICE_Init();
-	  /* USER CODE BEGIN 5 */
-	  char *txBuffer = "Sender \r\n";
+	  char *txBuffer = "Sender2 \r\n";
 
-
-	  //uint8_t message[8] = "hello \n";
 	  /* Infinite loop */
 	  for(;;)
 	  {
-		CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-		//osMessagePut(myQueue01Handle, &x, millisec)
-		//x = 2;
-		osMessageQueuePut(myQueue01Handle, (uint8_t *)&Data2Send2, 1, 4000);
-
 
 		osDelay(2000);
+		CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
+		//osMessagePut(myQueue01Handle, &x, millisec)
+		osSemaphoreRelease(myCountingSem01Handle);
+
 
 	  }
+	  //osDelay(500);
+
   /* USER CODE END Sender2 */
 }
 

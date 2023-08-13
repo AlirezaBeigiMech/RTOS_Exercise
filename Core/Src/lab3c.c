@@ -35,7 +35,7 @@ void Sender1_lab3c(void *argument)
 void Receiver_lab3c(void *argument)
 {
   /* USER CODE BEGIN Receiver */
-	MX_USB_DEVICE_Init();
+	//MX_USB_DEVICE_Init();
 	char *txBuffer = "Receiver \r\n";
   /* Infinite loop */
   for(;;)
@@ -43,7 +43,7 @@ void Receiver_lab3c(void *argument)
 
 	  osSemaphoreAcquire(myBinarySem01Handle, 4000);
 	  CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	  osDelay(50);
+	  //osDelay(50);
 
 
   }

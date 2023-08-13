@@ -171,12 +171,7 @@ void EXTI0_IRQHandler(void)
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
   /* USER CODE BEGIN EXTI0_IRQn 1 */
-  char *txBuffer = "IRQ \r\n";
 
-  /* Infinite loop */
-	CDC_Transmit_FS((uint8_t *)txBuffer, strlen(txBuffer));
-	//osMessagePut(myQueue01Handle, &x, millisec)
-	osSemaphoreRelease(myBinarySem01Handle);
 
   /* USER CODE END EXTI0_IRQn 1 */
 }
